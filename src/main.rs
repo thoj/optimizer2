@@ -35,13 +35,13 @@ macro_rules! generate_elm_struct {
 		)*
 		mixed
 	    }
-	    fn check(&self, s : &$name) -> bool {
+	    fn check(&self, s : &$name) -> CheckResult {
 		$(
 			if self.$field_name > s.$field_name { 
-				return false;
+				return CheckResult::Failed { element: stringify!($field_name), spec: s.$field_name, value: self.$field_name };
 			}
 		)*
-		true
+		CheckResult::Pass
 	    }
 	    fn set(&mut self, s : &'static str, i : u32) {
 		$(
@@ -62,7 +62,18 @@ macro_rules! generate_elm_struct {
     }
 }
 
+#[derive(Debug)]
+#[derive(PartialEq)]
+enum CheckResult {
+	Failed { element: &'static str, spec : u32, value: u32 },
+	Pass,
+}
 
+//impl PartialEq for CheckResult {
+//	fn eq(&self, other : &CheckResult) -> bool {
+//		false
+//	}
+//}
 
 generate_elm_struct! {
  struct elements {
@@ -146,11 +157,11 @@ fn check_test() {
 	s1.si = 10;
 	s1.cu = 10;
 	s1.mg = 100;
-	assert!(!elms1.check(&s1));
+	assert_eq!(elms1.check(&s1), CheckResult::Failed { element: "cu", spec: 10, value: 11 });
 	elms1.cu = 9;
-	assert!(elms1.check(&s1));
+	assert_eq!(elms1.check(&s1), CheckResult::Pass );
 	elms1.mg = 101;
-	assert!(!elms1.check(&s1));
+	assert_eq!(elms1.check(&s1), CheckResult::Failed { element: "mg", spec: 100, value: 101});
 }
 
 fn main() {
@@ -165,6 +176,6 @@ fn main() {
     elms.printall();
     elms2.printall();
     foo.printall();
-    println!("{}", foo.check(&elms));
+//    println!("{}", foo.check(&elms));
 
 }
