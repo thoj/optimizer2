@@ -38,21 +38,21 @@ macro_rules! generate_elm_struct {
 	    fn check(&self, s : &$name) -> CheckResult {
 		$(
 			if self.$field_name > s.$field_name { 
-				return CheckResult::Failed { element: stringify!($field_name), spec: s.$field_name, value: self.$field_name };
+				return CheckResult::Failed { element: &stringify!($field_name)[1..], spec: s.$field_name, value: self.$field_name };
 			}
 		)*
 		CheckResult::Pass
 	    }
 	    fn set(&mut self, s : &'static str, i : u32) {
 		$(
-			if stringify!($field_name) == s {
+			if &stringify!($field_name)[1..] == s {
 				self.$field_name = i;
 			}
 		)*
 	    }
 	    fn get(&self, s : &'static str) -> Option<u32> {
 		$(
-			if stringify!($field_name) == s {
+			if &stringify!($field_name)[1..] == s {
 				return Some(self.$field_name);
 			}
 		)*
@@ -143,24 +143,24 @@ fn mix_test() {
 	elms1.set("cu", 61);
 	elms2.set("cu", 84);
 	let elms1 = elms1.mix(&elms2);
-	assert_eq!(elms1.si, 75);	
-	assert_eq!(elms1.cu, 73); // always round up	
+	assert_eq!(elms1._si, 75);	
+	assert_eq!(elms1._cu, 73); // always round up	
 }
 
 #[test]
 fn check_test() {
 	let mut elms1 = elements::new();
 	let mut s1 = elements::new();
-	elms1.si = 9;
-	elms1.cu = 11;
-	elms1.mg = 100;
-	s1.si = 10;
-	s1.cu = 10;
-	s1.mg = 100;
+	elms1._si = 9;
+	elms1._cu = 11;
+	elms1._mg = 100;
+	s1._si = 10;
+	s1._cu = 10;
+	s1._mg = 100;
 	assert_eq!(elms1.check(&s1), CheckResult::Failed { element: "cu", spec: 10, value: 11 });
-	elms1.cu = 9;
+	elms1._cu = 9;
 	assert_eq!(elms1.check(&s1), CheckResult::Pass );
-	elms1.mg = 101;
+	elms1._mg = 101;
 	assert_eq!(elms1.check(&s1), CheckResult::Failed { element: "mg", spec: 100, value: 101});
 }
 
@@ -169,7 +169,7 @@ fn main() {
     let mut elms = elements::new();
     let mut elms2 = elements::new();
 
-    elms.si = 6;
+    elms._si = 6;
     elms._as = 6;
     elms.set("sn", 10);
     let foo = elms.mix(&elms2);
