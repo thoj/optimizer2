@@ -1,7 +1,14 @@
+// RUST experiments
+// Copyright 2016 Thomas Jäger
+
+
 extern crate rand;
 
 //use std::io;
 //use rand::Rng;
+
+// Yeah like i said EXPERIMENTS
+// This is a terrible idea. Sorry!
 
 macro_rules! generate_elm_struct {
     (struct $name:ident {
@@ -21,21 +28,44 @@ macro_rules! generate_elm_struct {
 		)*
 		println!("")
 	    }
-	    fn mix(&self, m : $name) -> $name {
-		let mixed = $name::new();
+	    fn mix(&self, m : &$name) -> $name {
+		let mut mixed = $name::new();
 		$(
-			mixed.$field_name = (self.$field.name + m.$field_name)
-		)
+			mixed.$field_name = ((self.$field_name as f32 + m.$field_name as f32) / 2.0).ceil() as u32;
+		)*
+		mixed
 	    }
-            fn get_field_names(&self) -> Vec<&'static str> {
-                vec![$(stringify!($field_name)),*]
-            }
+	    fn check(&self, s : &$name) -> bool {
+		$(
+			if self.$field_name > s.$field_name { 
+				return false;
+			}
+		)*
+		true
+	    }
+	    fn set(&mut self, s : &'static str, i : u32) {
+		$(
+			if stringify!($field_name) == s {
+				self.$field_name = i;
+			}
+		)*
+	    }
+	    fn get(&self, s : &'static str) -> Option<u32> {
+		$(
+			if stringify!($field_name) == s {
+				return Some(self.$field_name);
+			}
+		)*
+		None
+	    }
         }
     }
 }
 
+
+
 generate_elm_struct! {
- struct ElementValues {
+ struct elements {
 	si: u32,
 	fe: u32,
 	cu: u32,
@@ -86,13 +116,55 @@ generate_elm_struct! {
  }
 }
 
+#[test]
+fn get_set_test() {
+	let mut elms = elements::new();
+	elms.set("y", 99);
+	assert_eq!(elms.get("y"), Some(99))
+}
+
+#[test]
+fn mix_test() {
+	let mut elms1 = elements::new();
+	let mut elms2 = elements::new();
+	elms1.set("si", 50);
+	elms2.set("si", 100);
+	elms1.set("cu", 61);
+	elms2.set("cu", 84);
+	let elms1 = elms1.mix(&elms2);
+	assert_eq!(elms1.si, 75);	
+	assert_eq!(elms1.cu, 73); // always round up	
+}
+
+#[test]
+fn check_test() {
+	let mut elms1 = elements::new();
+	let mut s1 = elements::new();
+	elms1.si = 9;
+	elms1.cu = 11;
+	elms1.mg = 100;
+	s1.si = 10;
+	s1.cu = 10;
+	s1.mg = 100;
+	assert!(!elms1.check(&s1));
+	elms1.cu = 9;
+	assert!(elms1.check(&s1));
+	elms1.mg = 101;
+	assert!(!elms1.check(&s1));
+}
+
 fn main() {
 
-    let mut elms = ElementValues::new();
+    let mut elms = elements::new();
+    let mut elms2 = elements::new();
 
-    println!("{:?}", elms.get_field_names());
     elms.si = 6;
     elms._as = 6;
-    println!("si: {}", elms.si);
+    elms.set("sn", 10);
+    let foo = elms.mix(&elms2);
     elms.printall();
+    elms2.printall();
+    foo.printall();
+    println!("{}", foo.check(&elms));
+
 }
