@@ -1,12 +1,6 @@
 // RUST experiments
 // Copyright 2016 Thomas Jäger
 
-
-extern crate rand;
-
-//use std::io;
-//use rand::Rng;
-
 // Yeah like i said EXPERIMENTS
 // This is a terrible idea. Sorry!
 
@@ -28,10 +22,10 @@ macro_rules! generate_elm_struct {
 		)*
 		println!("")
 	    }
-	    fn mix(&self, m : &$name) -> $name {
+	    fn mix(&self, m : &$name, w1 : f32, w2 : f32) -> $name {
 		let mut mixed = $name::new();
 		$(
-			mixed.$field_name = ((self.$field_name as f32 + m.$field_name as f32) / 2.0).ceil() as u32;
+			mixed.$field_name = ( ( (self.$field_name as f32 * w1) + (m.$field_name as f32 * w2) ) / (w1 + w2) ).ceil() as u32;
 		)*
 		mixed
 	    }
@@ -62,6 +56,8 @@ macro_rules! generate_elm_struct {
     }
 }
 
+
+
 #[derive(Debug)]
 #[derive(PartialEq)]
 enum CheckResult {
@@ -69,14 +65,20 @@ enum CheckResult {
 	Pass,
 }
 
-//impl PartialEq for CheckResult {
-//	fn eq(&self, other : &CheckResult) -> bool {
-//		false
-//	}
-//}
+
+struct Sp {
+	priority: u32,
+	elements: Elements,
+}
+
+struct Fu {
+	number: u32,
+	weight: u32,
+	elements: Elements,
+}
 
 generate_elm_struct! {
- struct elements {
+ struct Elements {
 	_si: u32,
 	_fe: u32,
 	_cu: u32,
@@ -129,28 +131,35 @@ generate_elm_struct! {
 
 #[test]
 fn get_set_test() {
-	let mut elms = elements::new();
+	let mut elms = Elements::new();
 	elms.set("y", 99);
 	assert_eq!(elms.get("y"), Some(99))
 }
 
 #[test]
 fn mix_test() {
-	let mut elms1 = elements::new();
-	let mut elms2 = elements::new();
+	let mut elms1 = Elements::new();
+	let mut elms2 = Elements::new();
 	elms1.set("si", 50);
 	elms2.set("si", 100);
 	elms1.set("cu", 61);
 	elms2.set("cu", 84);
-	let elms1 = elms1.mix(&elms2);
+	let elms2 = elms2; // immutable
+	let mut elms1 = elms1.mix(&elms2, 950.0, 950.0);
 	assert_eq!(elms1._si, 75);	
 	assert_eq!(elms1._cu, 73); // always round up	
+	//reset
+	elms1.set("si", 50);
+	elms1.set("cu", 61);
+	let elms1 = elms1.mix(&elms2, 1000.0, 500.0);
+	assert_eq!(elms1._si, 67);	
+	assert_eq!(elms1._cu, 69); // always round up	
 }
 
 #[test]
 fn check_test() {
-	let mut elms1 = elements::new();
-	let mut s1 = elements::new();
+	let mut elms1 = Elements::new();
+	let mut s1 = Elements::new();
 	elms1._si = 9;
 	elms1._cu = 11;
 	elms1._mg = 100;
@@ -166,13 +175,13 @@ fn check_test() {
 
 fn main() {
 
-    let mut elms = elements::new();
-    let mut elms2 = elements::new();
+    let mut elms = Elements::new();
+    let mut elms2 = Elements::new();
 
     elms._si = 6;
     elms._as = 6;
     elms.set("sn", 10);
-    let foo = elms.mix(&elms2);
+    let foo = elms.mix(&elms2, 950.0, 950.0 );
     elms.printall();
     elms2.printall();
     foo.printall();
