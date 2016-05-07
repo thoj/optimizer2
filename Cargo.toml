@@ -5,6 +5,10 @@ version = "0.1.0"
 authors = ["Thomas Jager <mail@jager.no>" ]
 
 [dependencies]
-
 rand="0.3.0"
+
+
+[dependencies.mysql]
 mysql = "3.0.0"
+default-features = false
+features = ["pipe"]

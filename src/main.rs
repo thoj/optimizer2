@@ -295,11 +295,9 @@ fn subset_all() {
 	println!("{:?}", list)
 }
 
-fn main() {
-	let pool = my::Pool::new("mysql://vmr:vmr@localhost:3306/vmr").unwrap();
-	let res = pool.prep_exec("SELECT * FROM quality ORDER BY priority ASC LIMIT 3", ()).unwrap();
-	
-	let mut Sps: Vec<Sp> = vec![];
+fn load_quality(pool: my::Pool) -> Vec<Sp> {
+	let res = pool.prep_exec("SELECT * FROM quality ORDER BY priority ASC", ()).unwrap();
+	let mut Sps: Vec<Sp> = vec![]; // hold data
 	let idxs = res.column_indexes();
 	let mut res = res;
 	for row in res {
@@ -317,6 +315,16 @@ fn main() {
 			}
 		}	
 		Sps.push(Sp {elements: e, name: name, priority: priority} );
-	}	
-	println!("{:?}", Sps);
+	}
+	Sps
+}
+//FIXME
+fn load_data(pool: my:Pool) -> Vec<Fu> {
+	//let res = pool.prep_exec("SELECT * FROM ovn WHERE date='2016-05-06' ORDER BY quality ASC", ()).unwrap();
+}
+
+fn main() {
+	let pool = my::Pool::new("mysql://vmr:vmr@localhost:3306/vmr").unwrap();
+	let Sps = load_quality(pool);
+	println!("Loaded {} qualities", Sps.len());
 }
