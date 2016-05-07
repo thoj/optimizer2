@@ -7,3 +7,4 @@ authors = ["Thomas Jager <mail@jager.no>" ]
 [dependencies]
 
 rand="0.3.0"
+mysql = "3.0.0"

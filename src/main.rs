@@ -1,13 +1,20 @@
+
 // RUST experiments
 // Copyright 2016 Thomas Jäger
 
 // Yeah like i said EXPERIMENTS
 // This is a terrible idea. Sorry!
 
+extern crate mysql;
+
+use std::cmp;
+use mysql as my;
+
 macro_rules! generate_elm_struct {
     (struct $name:ident {
         $($field_name:ident: $field_type:ty,)*
     }) => {
+	#[derive(Debug)]
         struct $name {
             $($field_name: $field_type,)*
         }
@@ -25,8 +32,8 @@ macro_rules! generate_elm_struct {
 	    fn mix(&self, m : &$name, w1 : f32, w2 : f32) -> $name {
 		let mut mixed = $name::new();
 		$(
-			mixed.$field_name = ( ( (self.$field_name as f32 * w1) + (m.$field_name as f32 * w2) ) / (w1 + w2) ).ceil() as u32;
-		)*
+			mixed.$field_name = ( ( (self.$field_name as f32 * w1) + (m.$field_name as f32 * w2) ) / (w1 + w2) ).ceil() as i64;
+	)*
 		mixed
 	    }
 	    fn check(&self, s : &$name) -> CheckResult {
@@ -37,14 +44,14 @@ macro_rules! generate_elm_struct {
 		)*
 		CheckResult::Pass
 	    }
-	    fn set(&mut self, s : &'static str, i : u32) {
+	    fn set(&mut self, s : &str, i : i64) {
 		$(
 			if &stringify!($field_name)[1..] == s {
 				self.$field_name = i;
 			}
 		)*
 	    }
-	    fn get(&self, s : &'static str) -> Option<u32> {
+	    fn get(&self, s : &str) -> Option<i64> {
 		$(
 			if &stringify!($field_name)[1..] == s {
 				return Some(self.$field_name);
@@ -61,16 +68,19 @@ macro_rules! generate_elm_struct {
 #[derive(Debug)]
 #[derive(PartialEq)]
 enum CheckResult {
-	Failed { element: &'static str, spec : u32, value: u32 },
+	Failed { element: &'static str, spec : i64, value: i64 },
 	Pass,
 }
 
 
+#[derive(Debug)]
 struct Sp {
-	priority: u32,
+	name: String,
+	priority: i64,
 	elements: Elements,
 }
 
+#[derive(Debug)]
 struct Fu {
 	number: u32,
 	weight: u32,
@@ -79,53 +89,53 @@ struct Fu {
 
 generate_elm_struct! {
  struct Elements {
-	_si: u32,
-	_fe: u32,
-	_cu: u32,
-	_mg: u32,
-	_ag: u32,
-	_as: u32,
-	_b: u32,
-	_ba: u32,
-	_be: u32,
-	_bi: u32,
-	_ca: u32,
-	_cd: u32,
-	_ce: u32,
-	_cl: u32,
-	_co: u32,
-	_cr: u32,
-	_cs: u32,
-	_f: u32,
-	_ga: u32,
-	_ge: u32,
-	_in: u32,
-	_k: u32,
-	_la: u32,
-	_li: u32,
-	_mn: u32,
-	_mo: u32,
-	_na: u32,
-	_nd: u32,
-	_ni: u32,
-	_o: u32,
-	_p: u32,
-	_pb: u32,
-	_pd: u32,
-	_pr: u32,
-	_pt: u32,
-	_s: u32,
-	_sb: u32,
-	_sn: u32,
-	_sr: u32,
-	_ti: u32,
-	_th: u32,
-	_u: u32,
-	_v: u32,
-	_w: u32,
-	_zn: u32,
-	_zr: u32,
-	_y: u32,
+	_si: i64,
+	_fe: i64,
+	_cu: i64,
+	_mg: i64,
+	_ag: i64,
+	_as: i64,
+	_b: i64,
+	_ba: i64,
+	_be: i64,
+	_bi: i64,
+	_ca: i64,
+	_cd: i64,
+	_ce: i64,
+	_cl: i64,
+	_co: i64,
+	_cr: i64,
+	_cs: i64,
+	_f: i64,
+	_ga: i64,
+	_ge: i64,
+	_in: i64,
+	_k: i64,
+	_la: i64,
+	_li: i64,
+	_mn: i64,
+	_mo: i64,
+	_na: i64,
+	_nd: i64,
+	_ni: i64,
+	_o: i64,
+	_p: i64,
+	_pb: i64,
+	_pd: i64,
+	_pr: i64,
+	_pt: i64,
+	_s: i64,
+	_sb: i64,
+	_sn: i64,
+	_sr: i64,
+	_ti: i64,
+	_th: i64,
+	_u: i64,
+	_v: i64,
+	_w: i64,
+	_zn: i64,
+	_zr: i64,
+	_y: i64,
  }
 }
 
@@ -173,18 +183,140 @@ fn check_test() {
 	assert_eq!(elms1.check(&s1), CheckResult::Failed { element: "mg", spec: 100, value: 101});
 }
 
+
+fn rotate_arr(t: &mut Vec<u32>) {
+	let v = t[1];
+	let l = t.len(); //Borrow???
+	for x in 1..(l-1)  {
+		t[x] = t[x + 1];
+	}
+	t[l-1] = v;
+}
+
+fn rr_shed_pair(t: &Vec<u32>) -> Vec<(u32,u32)> {
+	let mut p : Vec<(u32,u32)> = vec![];
+	for x in 0..t.len()/2 {
+		p.push((t[x], t[t.len()/2+x]));
+	}
+	p
+}
+
+fn next(s: &mut Vec<u32>, m: &mut Vec<u32>, n: usize) -> bool {
+	let mut i = 0;
+	s[i]+=1;
+	while (i < (n - 1) as usize) && (s[i] > m[i] + 1) {
+		s[i] = 1;
+		i+=1;
+		s[i]+=1;
+	}
+	if i == (n - 1) as usize { 
+		return false;
+	}
+	let max = cmp::max(s[i], m[i]);
+	if i > 0 {
+		i-=1;
+		while i >= 0 { 
+			m[i] = max;
+			if i > 0 {
+				i-=1;
+			}
+			else {
+				break;
+			}
+		}
+	}
+	return true;
+}
+
+//#[test]
+fn test_rr_shed() {
+//	let mut t : Vec<u32> = vec![1,2,3,4,5,6,7,8];
+//	for x in 0..t.len()-1 {
+//		let p = rr_shed_pair(&t);
+//		println!("{:?}", p);
+//		rotate_arr(&mut t);
+//	}
+//	let mut t : Vec<u32> = vec![1,2,3,4,5,6];
+//	for x in 0..t.len() {
+//		let p = rr_shed_triple(&t);
+//		println!("{:?}", p);
+//		rotate_arr(&mut t);
+//	}
+	let n = 12;
+	let mut s: Vec<u32> = vec![1; n];
+	let mut m: Vec<u32> = vec![1; n];
+	let mut c = 1;
+	while next(&mut s, &mut m, n) {
+		let mut part_num: u32 = 1;
+		let mut i 	: usize = 0;
+		while i < n {
+			if s[i] > part_num {
+				part_num = s[i];
+			}
+			i+=1;
+		}
+		print!("{}.",c);
+		let mut p = part_num;
+		while p >= 1 {
+			//print!("[");
+			i = 0;
+			while i < n as usize {
+				if s[i] == p {
+			//		print!("{},", i + 1);
+				}
+				
+				i+=1;
+			}
+			//print!("]");
+			p-=1;
+		}
+		c+=1;
+		println!("");
+	}	
+
+}
+
+fn subset(arr: &Vec<usize>, size: usize, left: usize, index: usize, list: &mut Vec<usize>) {
+	if left == 0 {
+		println!("{:?}", list);
+		return;
+	}
+	for i in index..size-1 {
+		list.push(arr[i]);
+		subset(arr, size, left-1, i+1,list);
+		let _ = list.pop();
+	}
+}
+
+fn subset_all() {
+	let mut list : Vec<usize> = vec![];
+	let array = vec![1,2,3,4,5];
+	subset(&array, 5, 3, 0, &mut list);
+	println!("{:?}", list)
+}
+
 fn main() {
+	let pool = my::Pool::new("mysql://vmr:vmr@localhost:3306/vmr").unwrap();
+	let res = pool.prep_exec("SELECT * FROM quality ORDER BY priority ASC LIMIT 3", ()).unwrap();
+	
+	let mut Sps: Vec<Sp> = vec![];
+	let idxs = res.column_indexes();
+	let mut res = res;
+	for row in res {
 
-    let mut elms = Elements::new();
-    let mut elms2 = Elements::new();
-
-    elms._si = 6;
-    elms._as = 6;
-    elms.set("sn", 10);
-    let foo = elms.mix(&elms2, 950.0, 950.0 );
-    elms.printall();
-    elms2.printall();
-    foo.printall();
-//    println!("{}", foo.check(&elms));
-
+		let mut e = Elements::new();
+		let mut r = row.unwrap();
+		let name : String = r.take("name").expect("Name");
+		let priority : i64 = r.take("priority").expect("Priority");
+		for (x, y) in idxs.clone() {
+			let v : Option<my::Value> = r.get(&x[..]);
+			if let Some(vv) = v {
+				if let my::Value::Int(ii) = vv {
+					e.set(&x[..], ii);
+				}
+			}
+		}	
+		Sps.push(Sp {elements: e, name: name, priority: priority} );
+	}	
+	println!("{:?}", Sps);
 }
